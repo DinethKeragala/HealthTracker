@@ -2,11 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
-
-// Load environment variables
 dotenv.config();
 
-// Create Express app
 const app = express();
 
 // Middleware
@@ -19,6 +16,21 @@ connectDB();
 // Routes
 import authRoutes from './routes/auth.routes.js';
 app.use('/api/auth', authRoutes);
+
+// Simple root route
+app.get('/', (req, res) => {
+  res.json({
+    name: 'HealthTracker API',
+    status: 'ok',
+    docs: '/api/auth',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Health endpoint (can be used by containers / uptime monitors)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'UP', service: 'backend', time: Date.now() });
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -4,7 +4,8 @@ WORKDIR /app
 
 # Install deps separately (leverage caching)
 COPY package.json package-lock.json* .npmrc* ./
-RUN npm install --production --no-audit --no-fund && npm cache clean --force
+# Install ALL dependencies (including dev) because we need express, mongoose, etc.
+RUN npm install --no-audit --no-fund --production=false && npm cache clean --force
 
 # Copy source
 COPY . .
@@ -15,5 +16,5 @@ EXPOSE 5000
 # Default env
 ENV NODE_ENV=production
 
-# Start command
+# Start command (ensure dependencies exist)
 CMD ["node", "server.js"]

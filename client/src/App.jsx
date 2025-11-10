@@ -1,7 +1,10 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { AppProvider } from './context/AppContext';
+import Navigation from './components/Navigation.jsx';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
 import './index.css';
 
 // Protected Route wrapper
@@ -12,34 +15,38 @@ const PrivateRoute = ({ children }) => {
     return <div>Loading...</div>;
   }
   
-  return user ? children : <Navigate to="/login" />;
+  // Show the Navbar only when authenticated (not on login/register)
+  return user ? (
+    <>
+      <Navigation />
+      {children}
+    </>
+  ) : (
+    <Navigate to="/login" />
+  );
 };
 
-// Placeholder Dashboard component
-const Dashboard = () => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold">Dashboard</h1>
-    <p>Welcome to your Health Tracker dashboard!</p>
-  </div>
-);
+// Dashboard page is imported from ./pages/Dashboard
 
 function App() {
   return (
     <Router>
       <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            }
-          />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
+        <AppProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              }
+            />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </AppProvider>
       </AuthProvider>
     </Router>
   );

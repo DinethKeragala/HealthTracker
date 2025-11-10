@@ -60,6 +60,16 @@ pipeline {
                 """
             }
         }
+
+        stage('Run docker-compose') {
+            steps {
+                // Make sure we are in the workspace root where docker-compose.yml lives
+                sh """
+                    docker compose down || true
+                    docker compose up -d
+                """
+            }
+        }
     }
 
     post {
@@ -67,9 +77,7 @@ pipeline {
             sh 'docker logout || true'
         }
         success {
-            echo "Pushed:"
-            echo " - ${CLIENT_IMAGE}:${IMAGE_TAG}"
-            echo " - ${SERVER_IMAGE}:${IMAGE_TAG}"
+            echo "Pushed to Docker Hub and started docker-compose stack."
         }
     }
 }

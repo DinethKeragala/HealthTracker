@@ -22,6 +22,8 @@ pipeline {
             steps {
                 sh """
                     docker build \
+                      --no-cache \
+                      --build-arg VITE_API_URL=/api \
                       -t ${CLIENT_IMAGE}:${IMAGE_TAG} \
                       ./client
                 """

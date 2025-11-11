@@ -21,7 +21,7 @@ pipeline {
         stage('Build client image') {
             steps {
                 sh """
-                    docker build \
+                    docker build --no-cache \
                       -t ${CLIENT_IMAGE}:${IMAGE_TAG} \
                       ./client
                 """
@@ -63,8 +63,11 @@ pipeline {
 
         stage('Run docker-compose') {
             steps {
-                // Make sure we are in the workspace root where docker-compose.yml lives
                 sh """
+                    # Clean up any old containers with same names (safety)
+                    docker rm -f healthtracker-frontend healthtracker-backend healthtracker-mongo || true
+
+                    # Restart the stack from docker-compose.yml
                     docker compose down || true
                     docker compose up -d
                 """
@@ -77,7 +80,7 @@ pipeline {
             sh 'docker logout || true'
         }
         success {
-            echo "Pushed to Docker Hub and started docker-compose stack."
+            echo "Pushed images and restarted docker-compose stack."
         }
     }
 }

@@ -5,15 +5,8 @@ WORKDIR /app
 # Copy only manifest first to leverage Docker layer cache
 COPY package.json package-lock.json* .npmrc* ./
 
-# Force dev dependencies installation even if NODE_ENV is set elsewhere.
-# Prefer `npm ci` when a lockfile exists for reproducible installs and to
-# ensure devDependencies (like `vite`) are installed. Fall back to
-# `npm install --production=false` if no lockfile is present.
-RUN sh -c "if [ -f package-lock.json ]; then \
-		npm ci --include=dev --no-audit --no-fund; \
-	else \
-		npm install --no-audit --no-fund --production=false; \
-	fi" \
+# Force dev dependencies installation even if NODE_ENV is set elsewhere
+RUN npm install --no-audit --no-fund --production=false \
 	&& npm cache clean --force
 
 # Copy the rest of the source (node_modules excluded by .dockerignore)

@@ -40,22 +40,23 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
+        {/* Auth pages get a blue background; other pages use neutral body color */}
         <div className="auth-card">
           <div>
-            <h2 className="text-center text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300">
+            <h2 className="text-center text-3xl font-extrabold tracking-tight text-blue-700">
               Create account
             </h2>
             <p className="mt-2 text-center text-sm text-gray-400">
               Or{' '}
-              <Link to="/login" className="font-medium text-blue-400 hover:text-blue-300">
+              <Link to="/login" className="font-medium text-blue-700 hover:text-blue-800">
                 sign in to your account
               </Link>
             </p>
           </div>
           {error && (
-            <div className="bg-red-900/30 border border-red-600 text-red-300 px-4 py-3 rounded" role="alert">
+            <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded" role="alert">
               <span className="block sm:inline">{error}</span>
             </div>
           )}

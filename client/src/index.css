@@ -5,7 +5,8 @@
 /* Custom styles */
 @layer base {
   body {
-    @apply bg-gray-900 text-gray-100 antialiased;
+    /* Set a neutral background globally; blue will be applied only on auth pages */
+    @apply bg-white text-gray-900 antialiased;
   }
 }
 
@@ -14,18 +15,20 @@
     @apply px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200;
   }
   .input-field {
-    @apply w-full px-3 py-2 rounded-md !bg-transparent border border-gray-600 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors;
+    /* Light theme input for auth card on white background */
+    @apply w-full px-3 py-2 rounded-md !bg-white border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors;
   }
   /* Autofill override */
   input.input-field:-webkit-autofill,
   input.input-field:-webkit-autofill:hover,
   input.input-field:-webkit-autofill:focus {
-    -webkit-box-shadow: 0 0 0px 1000px rgba(17,24,39,0.85) inset;
-    box-shadow: 0 0 0px 1000px rgba(17,24,39,0.85) inset;
-    -webkit-text-fill-color: #f3f4f6;
+    -webkit-box-shadow: 0 0 0px 1000px rgba(255,255,255,1) inset;
+    box-shadow: 0 0 0px 1000px rgba(255,255,255,1) inset;
+    -webkit-text-fill-color: #111827; /* gray-900 */
     transition: background-color 9999s ease-in-out 0s;
   }
   .auth-card {
-    @apply bg-gray-800/70 backdrop-blur border border-gray-700 rounded-xl shadow-xl p-8 space-y-6 transition-colors duration-200;
+    /* Elevate card on white page */
+    @apply bg-white/95 backdrop-blur-sm border border-gray-200 rounded-2xl shadow-2xl p-8 md:p-10 space-y-6 transition-colors duration-200;
   }
 }

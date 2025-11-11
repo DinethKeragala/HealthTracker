@@ -5,6 +5,7 @@ import Navigation from './components/Navigation.jsx';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import ActivityLog from './pages/ActivityLog.jsx';
 import './index.css';
 
 // Protected Route wrapper
@@ -41,6 +42,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <Dashboard />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/activities"
+              element={
+                <PrivateRoute>
+                  <ActivityLog />
                 </PrivateRoute>
               }
             />

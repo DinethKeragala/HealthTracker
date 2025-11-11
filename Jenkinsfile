@@ -5,11 +5,9 @@ pipeline {
         DOCKERHUB_USERNAME     = 'dinethkeragala'
         DOCKERHUB_CREDENTIALS  = 'dockerhub-creds'
 
-        // Change these if you want different repo names
         CLIENT_IMAGE = "${DOCKERHUB_USERNAME}/healthtracker-client"
         SERVER_IMAGE = "${DOCKERHUB_USERNAME}/healthtracker-server"
 
-        // You can also use "${env.BUILD_NUMBER}" or a git commit hash
         IMAGE_TAG = "latest"
     }
 
@@ -62,6 +60,16 @@ pipeline {
                 """
             }
         }
+
+        stage('Run docker-compose') {
+            steps {
+                // Make sure we are in the workspace root where docker-compose.yml lives
+                sh """
+                    docker compose down || true
+                    docker compose up -d
+                """
+            }
+        }
     }
 
     post {
@@ -69,9 +77,7 @@ pipeline {
             sh 'docker logout || true'
         }
         success {
-            echo "Pushed:"
-            echo " - ${CLIENT_IMAGE}:${IMAGE_TAG}"
-            echo " - ${SERVER_IMAGE}:${IMAGE_TAG}"
+            echo "Pushed to Docker Hub and started docker-compose stack."
         }
     }
 }

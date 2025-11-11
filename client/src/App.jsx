@@ -5,7 +5,9 @@ import Navigation from './components/Navigation.jsx';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import ActivityLog from './pages/ActivityLog.jsx';
+// Import compatibly in case ActivityLog is exported as default or named
+import * as ActivityLogModule from './pages/ActivityLog.jsx';
+const ActivityLogCmp = ActivityLogModule.default || ActivityLogModule.ActivityLog;
 import './index.css';
 
 // Protected Route wrapper
@@ -49,7 +51,7 @@ function App() {
               path="/activities"
               element={
                 <PrivateRoute>
-                  <ActivityLog />
+                  <ActivityLogCmp />
                 </PrivateRoute>
               }
             />

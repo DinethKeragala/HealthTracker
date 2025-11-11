@@ -60,19 +60,6 @@ pipeline {
                 """
             }
         }
-
-        stage('Run docker-compose') {
-            steps {
-                sh """
-                    # Clean up any old containers with same names (safety)
-                    docker rm -f healthtracker-frontend healthtracker-backend healthtracker-mongo || true
-
-                    # Restart the stack from docker-compose.yml
-                    docker compose down || true
-                    docker compose up -d
-                """
-            }
-        }
     }
 
     post {

@@ -1,0 +1,38 @@
+meta {
+  name: Register
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{host}}/api/auth/register
+}
+
+headers {
+  content-type: application/json
+}
+
+body {
+  {
+    "username": "{{username}}",
+    "email": "{{email}}",
+    "password": "{{password}}",
+    "firstName": "{{firstName}}",
+    "lastName": "{{lastName}}"
+  }
+}
+
+script:post-response {
+  if (res.body?.token) {
+    bru.setVar("token", res.body.token);
+  }
+  if (res.body?.user?.id) {
+    bru.setVar("userId", res.body.user.id);
+  }
+}
+
+tests {
+  test("register returns token", function () {
+    expect(res.status).to.be.oneOf([200, 201, 400]);
+  });
+}

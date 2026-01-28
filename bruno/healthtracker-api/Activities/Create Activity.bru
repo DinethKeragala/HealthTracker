@@ -1,0 +1,39 @@
+meta {
+  name: Create Activity
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{host}}/api/activities
+}
+
+headers {
+  content-type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body {
+  {
+    "activityType": "run",
+    "title": "Morning run",
+    "notes": "Easy pace",
+    "startedAt": "2026-01-26T07:00:00.000Z",
+    "durationMinutes": 30,
+    "distanceKm": 5.2,
+    "caloriesBurned": 350
+  }
+}
+
+script:post-response {
+  if (res.body?._id) {
+    bru.setVar("activityId", res.body._id);
+  }
+}
+
+tests {
+  test("create activity", function () {
+    expect(res.status).to.equal(201);
+    expect(res.body._id).to.exist;
+  });
+}

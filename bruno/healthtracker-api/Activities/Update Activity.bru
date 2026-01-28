@@ -1,0 +1,31 @@
+meta {
+  name: Update Activity
+  type: http
+  seq: 13
+}
+
+patch {
+  url: {{host}}/api/activities/:id
+}
+
+params:path {
+  id: {{activityId}}
+}
+
+headers {
+  content-type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body {
+  {
+    "notes": "Updated via Bruno",
+    "caloriesBurned": 360
+  }
+}
+
+tests {
+  test("update activity", function () {
+    expect(res.status).to.be.oneOf([200, 404]);
+  });
+}

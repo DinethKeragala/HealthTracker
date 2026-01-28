@@ -20,21 +20,38 @@ pipeline {
 
         stage('Build client image') {
             steps {
-                sh """
-                    docker build --no-cache \
-                      -t ${CLIENT_IMAGE}:${IMAGE_TAG} \
-                      ./client
-                """
+                script {
+                    def cmd = """
+                        docker build --no-cache \
+                          --build-arg VITE_API_URL=/api \
+                          -t ${CLIENT_IMAGE}:${IMAGE_TAG} \
+                          ./client
+                    """.stripIndent().trim()
+
+                    if (isUnix()) {
+                        sh cmd
+                    } else {
+                        bat cmd
+                    }
+                }
             }
         }
 
         stage('Build server image') {
             steps {
-                sh """
-                    docker build \
-                      -t ${SERVER_IMAGE}:${IMAGE_TAG} \
-                      ./server
-                """
+                script {
+                    def cmd = """
+                        docker build \
+                          -t ${SERVER_IMAGE}:${IMAGE_TAG} \
+                          ./server
+                    """.stripIndent().trim()
+
+                    if (isUnix()) {
+                        sh cmd
+                    } else {
+                        bat cmd
+                    }
+                }
             }
         }
 
@@ -45,29 +62,51 @@ pipeline {
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
-                    sh '''
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                    '''
+                    script {
+                        def cmd = isUnix()
+                            ? 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+                            : 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
+
+                        if (isUnix()) {
+                            sh cmd
+                        } else {
+                            bat cmd
+                        }
+                    }
                 }
             }
         }
 
         stage('Push images') {
             steps {
-                sh """
-                    docker push ${CLIENT_IMAGE}:${IMAGE_TAG}
-                    docker push ${SERVER_IMAGE}:${IMAGE_TAG}
-                """
+                script {
+                    def cmd = """
+                        docker push ${CLIENT_IMAGE}:${IMAGE_TAG}
+                        docker push ${SERVER_IMAGE}:${IMAGE_TAG}
+                    """.stripIndent().trim()
+
+                    if (isUnix()) {
+                        sh cmd
+                    } else {
+                        bat cmd
+                    }
+                }
             }
         }
     }
 
     post {
         always {
-            sh 'docker logout || true'
+            script {
+                if (isUnix()) {
+                    sh 'docker logout || true'
+                } else {
+                    bat 'docker logout'
+                }
+            }
         }
         success {
-            echo "Pushed images and restarted docker-compose stack."
+            echo "Pushed images to Docker Hub: ${CLIENT_IMAGE}:${IMAGE_TAG}, ${SERVER_IMAGE}:${IMAGE_TAG}"
         }
     }
 }

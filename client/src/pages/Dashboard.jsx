@@ -1,5 +1,4 @@
-import React from 'react'
-import { useAppContext } from '../context/AppContext'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PlusIcon, TrendingUpIcon, FlameIcon, ClockIcon } from 'lucide-react'
 import {
@@ -11,72 +10,64 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
+import { getSummary, getGoalsProgress } from '../services/stats.service'
+import { listActivities } from '../services/activities.service'
 
 const Dashboard = () => {
-  const { activities, goals } = useAppContext()
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [summary, setSummary] = useState(null)
+  const [goalsProgress, setGoalsProgress] = useState([])
+  const [recentActivities, setRecentActivities] = useState([])
 
-  // Get today's date
-  const today = new Date().toISOString().split('T')[0]
-
-  // Filter activities for today
-  const todayActivities = activities.filter(
-    (activity) => activity.date === today,
-  )
-
-  // Calculate totals for today
-  const todayStats = {
-    calories: todayActivities.reduce(
-      (sum, activity) => sum + activity.calories,
-      0,
-    ),
-    duration: todayActivities.reduce(
-      (sum, activity) => sum + activity.duration,
-      0,
-    ),
-    distance: todayActivities
-      .filter((activity) => activity.distance)
-      .reduce((sum, activity) => sum + (activity.distance || 0), 0),
-  }
-
-  // Process data for weekly chart
-  const getLastSevenDays = () => {
-    const dates = []
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date()
-      date.setDate(date.getDate() - i)
-      dates.push(date.toISOString().split('T')[0])
+  useEffect(() => {
+    let mounted = true
+    const run = async () => {
+      setLoading(true)
+      setError('')
+      try {
+        const [s, gp, a] = await Promise.all([
+          getSummary(),
+          getGoalsProgress(),
+          listActivities({ limit: 3 }),
+        ])
+        if (!mounted) return
+        setSummary(s)
+        setGoalsProgress(gp?.items || [])
+        setRecentActivities(a?.items || [])
+      } catch (e) {
+        if (!mounted) return
+        setError(e?.response?.data?.message || e.message || 'Failed to load dashboard')
+      } finally {
+        if (mounted) setLoading(false)
+      }
     }
-    return dates
-  }
+    run()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
-  const weeklyData = getLastSevenDays().map((date) => {
-    const dayActivities = activities.filter(
-      (activity) => activity.date === date,
-    )
-    const dayCalories = dayActivities.reduce(
-      (sum, activity) => sum + activity.calories,
-      0,
-    )
+  const weeklyData = useMemo(() => {
+    const daily = summary?.daily || []
+    return daily.map((d) => ({
+      date: new Date(d._id).toLocaleDateString('en-US', { weekday: 'short' }),
+      calories: d.caloriesBurned || 0,
+    }))
+  }, [summary])
+
+  const todayStats = useMemo(() => {
+    const now = new Date()
+    const from = new Date(now)
+    from.setHours(0, 0, 0, 0)
+    const todayKey = from.toISOString().slice(0, 10)
+    const today = (summary?.daily || []).find((d) => d._id === todayKey)
     return {
-      date: new Date(date).toLocaleDateString('en-US', {
-        weekday: 'short',
-      }),
-      calories: dayCalories,
+      calories: today?.caloriesBurned || 0,
+      duration: today?.durationMinutes || 0,
+      distance: today?.distanceKm || 0,
     }
-  })
-
-  // Get upcoming goals
-  const upcomingGoals = goals
-    .filter((goal) => !goal.completed)
-    .sort(
-      (a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime(),
-    )
-    .slice(0, 3)
-
-  // Get recent activities
-  const recentActivities = [...activities]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 3)
+  }, [summary])
 
   return (
     <div className="space-y-6">
@@ -90,6 +81,12 @@ const Dashboard = () => {
           <span>Log Activity</span>
         </Link>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          {error}
+        </div>
+      )}
 
       {/* Today's Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -120,7 +117,7 @@ const Dashboard = () => {
           <div className="ml-4">
             <p className="text-sm text-gray-500">Distance Today</p>
             <p className="text-xl font-bold">
-              {todayStats.distance.toFixed(1)} km
+              {Number(todayStats.distance).toFixed(1)} km
             </p>
           </div>
         </div>
@@ -146,7 +143,7 @@ const Dashboard = () => {
         {/* Upcoming Goals */}
         <div className="bg-white rounded-xl shadow p-4">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">Upcoming Goals</h2>
+            <h2 className="text-lg font-semibold">Goal Progress</h2>
             <Link
               to="/goals"
               className="text-indigo-600 text-sm hover:underline"
@@ -154,38 +151,36 @@ const Dashboard = () => {
               View all
             </Link>
           </div>
-          {upcomingGoals.length > 0 ? (
+          {goalsProgress.length > 0 ? (
             <div className="space-y-4">
-              {upcomingGoals.map((goal) => (
+              {goalsProgress.slice(0, 3).map((item) => (
                 <div
-                  key={goal.id}
+                  key={item.goal?._id}
                   className="border-b pb-4 last:border-b-0 last:pb-0"
                 >
                   <div className="flex justify-between">
-                    <h3 className="font-medium">{goal.title}</h3>
-                    <span className="text-sm text-gray-500">
-                      Due {new Date(goal.deadline).toLocaleDateString()}
+                    <h3 className="font-medium">
+                      {item.goal?.title || `${item.goal?.goalType || 'goal'}`}
+                    </h3>
+                    <span className="text-sm text-gray-500 capitalize">
+                      {item.goal?.period}
                     </span>
                   </div>
                   <div className="mt-2">
                     <div className="flex justify-between text-sm mb-1">
                       <span>
-                        {goal.current} / {goal.target} {goal.unit}
+                        {item.currentValue} / {item.goal?.targetValue}{' '}
+                        {item.goal?.unit || ''}
                       </span>
                       <span>
-                        {Math.round((goal.current / goal.target) * 100)}%
+                        {Math.round(item.percent || 0)}%
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
                         className="bg-indigo-600 h-2 rounded-full"
                         style={{
-                          width: `${Math.min(
-                            100,
-                            Math.round(
-                              (goal.current / goal.target) * 100,
-                            ),
-                          )}%`,
+                          width: `${Math.min(100, Math.round(item.percent || 0))}%`,
                         }}
                       ></div>
                     </div>
@@ -195,7 +190,7 @@ const Dashboard = () => {
             </div>
           ) : (
             <p className="text-gray-500 text-center py-4">
-              No upcoming goals. Create one!
+              No active goals yet. Create one!
             </p>
           )}
         </div>
@@ -215,25 +210,25 @@ const Dashboard = () => {
             <div className="space-y-4">
               {recentActivities.map((activity) => (
                 <div
-                  key={activity.id}
+                  key={activity._id}
                   className="flex items-center border-b pb-4 last:border-b-0 last:pb-0"
                 >
                   <div className="bg-indigo-100 p-3 rounded-lg">
                     <ActivityIcon
-                      type={activity.type}
+                      type={activity.activityType}
                       size={20}
                       className="text-indigo-600"
                     />
                   </div>
                   <div className="ml-4 flex-grow">
-                    <h3 className="font-medium capitalize">{activity.type}</h3>
+                    <h3 className="font-medium capitalize">{activity.activityType}</h3>
                     <p className="text-sm text-gray-500">
-                      {activity.duration} min • {activity.calories} kcal
-                      {activity.distance && ` • ${activity.distance} km`}
+                      {(activity.durationMinutes ?? 0)} min • {(activity.caloriesBurned ?? 0)} kcal
+                      {activity.distanceKm ? ` • ${activity.distanceKm} km` : ''}
                     </p>
                   </div>
                   <div className="text-right text-sm text-gray-500">
-                    {new Date(activity.date).toLocaleDateString()}
+                    {new Date(activity.startedAt).toLocaleDateString()}
                   </div>
                 </div>
               ))}

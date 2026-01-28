@@ -5,9 +5,10 @@ import Navigation from './components/Navigation.jsx';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-// Import compatibly in case ActivityLog is exported as default or named
-import * as ActivityLogModule from './pages/ActivityLog.jsx';
-const ActivityLogCmp = ActivityLogModule.default || ActivityLogModule.ActivityLog;
+import Goals from './pages/Goals';
+import Statistics from './pages/Statistics';
+import Profile from './pages/Profile';
+import ActivityLog from './pages/ActivityLog.jsx';
 import './index.css';
 
 // Protected Route wrapper
@@ -40,22 +41,46 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route
-              path="/dashboard"
+              path="/"
               element={
                 <PrivateRoute>
                   <Dashboard />
                 </PrivateRoute>
               }
             />
+            <Route path="/dashboard" element={<Navigate to="/" replace />} />
             <Route
               path="/activities"
               element={
                 <PrivateRoute>
-                  <ActivityLogCmp />
+                  <ActivityLog />
                 </PrivateRoute>
               }
             />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route
+              path="/goals"
+              element={
+                <PrivateRoute>
+                  <Goals />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/statistics"
+              element={
+                <PrivateRoute>
+                  <Statistics />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <PrivateRoute>
+                  <Profile />
+                </PrivateRoute>
+              }
+            />
           </Routes>
         </AppProvider>
       </AuthProvider>

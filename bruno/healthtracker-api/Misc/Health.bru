@@ -1,0 +1,15 @@
+meta {
+  name: Health
+  type: http
+  seq: 50
+}
+
+get {
+  url: {{host}}/health
+}
+
+tests {
+  test("health is up", function () {
+    expect(res.status).to.equal(200);
+  });
+}

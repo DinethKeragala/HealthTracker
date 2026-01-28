@@ -35,7 +35,13 @@ export default function Register() {
       await register(userData);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to register');
+      const serverMessage = err?.response?.data?.message;
+      if (serverMessage) {
+        setError(serverMessage);
+      } else {
+        // Usually a network/DNS/CORS/baseURL issue (no HTTP response)
+        setError(err?.message ? `Failed to register: ${err.message}` : 'Failed to register');
+      }
     }
   };
 

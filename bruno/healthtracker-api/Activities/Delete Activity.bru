@@ -1,0 +1,23 @@
+meta {
+  name: Delete Activity
+  type: http
+  seq: 14
+}
+
+delete {
+  url: {{host}}/api/activities/:id
+}
+
+params:path {
+  id: {{activityId}}
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+tests {
+  test("delete activity", function () {
+    expect(res.status).to.be.oneOf([200, 404]);
+  });
+}

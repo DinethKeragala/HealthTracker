@@ -1,0 +1,20 @@
+meta {
+  name: Me
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{host}}/api/auth/me
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+tests {
+  test("me returns user", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body._id || res.body.id).to.exist;
+  });
+}

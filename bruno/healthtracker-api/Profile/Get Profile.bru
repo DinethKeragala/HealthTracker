@@ -1,0 +1,19 @@
+meta {
+  name: Get Profile
+  type: http
+  seq: 30
+}
+
+get {
+  url: {{host}}/api/profile
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+tests {
+  test("get profile", function () {
+    expect(res.status).to.equal(200);
+  });
+}

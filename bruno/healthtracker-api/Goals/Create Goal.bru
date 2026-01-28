@@ -1,0 +1,36 @@
+meta {
+  name: Create Goal
+  type: http
+  seq: 20
+}
+
+post {
+  url: {{host}}/api/goals
+}
+
+headers {
+  content-type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body {
+  {
+    "goalType": "steps",
+    "targetValue": 8000,
+    "unit": "steps",
+    "period": "daily",
+    "title": "Daily steps"
+  }
+}
+
+script:post-response {
+  if (res.body?._id) {
+    bru.setVar("goalId", res.body._id);
+  }
+}
+
+tests {
+  test("create goal", function () {
+    expect(res.status).to.equal(201);
+  });
+}

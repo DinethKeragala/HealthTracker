@@ -37,7 +37,20 @@ export const register = async (req, res) => {
       token
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    // Mongoose duplicate key error
+    if (error?.code === 11000) {
+      return res.status(400).json({ message: 'User with this email or username already exists' });
+    }
+
+    // Mongoose schema validation errors
+    if (error?.name === 'ValidationError') {
+      const firstFieldError = Object.values(error.errors || {})?.[0];
+      return res.status(400).json({
+        message: firstFieldError?.message || 'Invalid registration details'
+      });
+    }
+
+    res.status(500).json({ message: error?.message || 'Failed to register' });
   }
 };
 

@@ -1,0 +1,27 @@
+meta {
+  name: Update Profile
+  type: http
+  seq: 31
+}
+
+patch {
+  url: {{host}}/api/profile
+}
+
+headers {
+  content-type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body {
+  {
+    "heightCm": 180,
+    "weightKg": 75
+  }
+}
+
+tests {
+  test("update profile", function () {
+    expect(res.status).to.equal(200);
+  });
+}

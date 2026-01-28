@@ -1,25 +1,24 @@
-
 FROM node:20-alpine AS build
+
 WORKDIR /app
 
-COPY package.json package-lock.json* .npmrc* ./
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 
-RUN npm install --no-audit --no-fund --production=false \
-	&& npm cache clean --force
+COPY package*.json ./
+RUN npm install
 
 COPY . .
-
-ARG VITE_API_URL
-ENV VITE_API_URL=${VITE_API_URL}
-
 RUN npm run build
 
-FROM nginx:1.27-alpine AS production
-WORKDIR /usr/share/nginx/html
 
+FROM nginx:1.27-alpine
+
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Use custom nginx config (includes SPA routing + /api proxy to backend)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-COPY --from=build /app/dist .
-
 EXPOSE 80
+
 CMD ["nginx", "-g", "daemon off;"]

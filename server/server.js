@@ -17,6 +17,16 @@ connectDB();
 import authRoutes from './routes/auth.routes.js';
 app.use('/api/auth', authRoutes);
 
+import activityRoutes from './routes/activity.routes.js';
+import goalRoutes from './routes/goal.routes.js';
+import profileRoutes from './routes/profile.routes.js';
+import statsRoutes from './routes/stats.routes.js';
+
+app.use('/api/activities', activityRoutes);
+app.use('/api/goals', goalRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/stats', statsRoutes);
+
 // Simple root route
 app.get('/', (req, res) => {
   res.json({

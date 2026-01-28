@@ -1,0 +1,31 @@
+meta {
+  name: Update Goal
+  type: http
+  seq: 23
+}
+
+patch {
+  url: {{host}}/api/goals/:id
+}
+
+params:path {
+  id: {{goalId}}
+}
+
+headers {
+  content-type: application/json
+  Authorization: Bearer {{token}}
+}
+
+body {
+  {
+    "targetValue": 10000,
+    "isActive": true
+  }
+}
+
+tests {
+  test("update goal", function () {
+    expect(res.status).to.be.oneOf([200, 404]);
+  });
+}

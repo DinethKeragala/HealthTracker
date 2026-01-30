@@ -1,0 +1,30 @@
+- hosts: servers
+  become: yes
+
+  tasks:
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+
+    - name: Install docker-compose
+      get_url:
+        url: https://github.com/docker/compose/releases/latest/download/docker-compose-Linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
+
+    - name: Create deploy directory
+      file:
+        path: /opt/healthtracker
+        state: directory
+
+    - name: Copy docker-compose file
+      copy:
+        src: docker-compose.yml
+        dest: /opt/healthtracker/docker-compose.yml
+
+    - name: Deploy application
+      command: docker-compose up -d
+      args:
+        chdir: /opt/healthtracker

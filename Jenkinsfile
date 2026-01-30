@@ -25,13 +25,9 @@ pipeline {
 
         stage('Push Docker Images') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
+                withCredentials([string(credentialsId: 'dockerhub-creds', variable: 'DOCKER_PASS')]) {
                     sh '''
-                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                    echo "$DOCKER_PASS" | docker login -u ${DOCKER_USER} --password-stdin
                     docker push ${DOCKER_USER}/healthtracker-server:latest
                     docker push ${DOCKER_USER}/healthtracker-client:latest
                     '''
@@ -41,10 +37,7 @@ pipeline {
 
         stage('Terraform Apply') {
             steps {
-                withCredentials([string(
-                    credentialsId: 'do-token',
-                    variable: 'TF_VAR_do_token'
-                )]) {
+                withCredentials([string(credentialsId: 'do-token', variable: 'TF_VAR_do_token')]) {
                     dir('terraform') {
                         sh '''
                         rm -rf .terraform
@@ -70,23 +63,21 @@ pipeline {
 
         stage('Ansible Deploy') {
             steps {
-                sshagent(credentials: ['root']) {
-                    dir('ansible') {
-                        sh '''
-                        ansible-playbook -i inventory.ini playbook.yml
-                        '''
-                    }
+                sshagent(credentials: ['healthtracker-ssh']) {
+                    sh '''
+                    ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
+                    '''
                 }
             }
         }
     }
 
     post {
-        success {
-            echo "✅ Deployment completed successfully!"
-        }
         failure {
             echo "❌ Pipeline failed"
+        }
+        success {
+            echo "✅ Deployment completed successfully"
         }
     }
 }

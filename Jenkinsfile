@@ -36,8 +36,16 @@ pipeline {
         withCredentials([string(credentialsId: 'do-token', variable: 'TF_VAR_do_token')]) {
           dir('terraform') {
             sh '''
-            terraform init
-            terraform apply -auto-approve
+            set -eu
+
+            # Work around Jenkins workspaces mounted with "noexec" (Terraform providers are native binaries).
+            # By moving Terraform's data dir to /tmp, provider binaries become executable.
+            export TF_DATA_DIR="$(mktemp -d)"
+            export TF_PLUGIN_CACHE_DIR="${HOME}/.terraform.d/plugin-cache"
+            mkdir -p "$TF_PLUGIN_CACHE_DIR"
+
+            terraform init -input=false
+            terraform apply -auto-approve -input=false
             '''
           }
         }

@@ -16,6 +16,7 @@
     - name: Update apt cache (clean state)
       apt:
         update_cache: true
+        cache_valid_time: 3600
 
     - name: Install required packages
       apt:
@@ -30,7 +31,7 @@
       file:
         path: /etc/apt/keyrings
         state: directory
-        mode: '0755'
+        mode: "0755"
 
     - name: Add Docker GPG key
       shell: |
@@ -48,7 +49,7 @@
         state: present
         filename: docker
 
-    - name: Update apt cache after adding Docker repo
+    - name: Update apt after adding Docker repo
       apt:
         update_cache: true
 

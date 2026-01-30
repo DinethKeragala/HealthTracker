@@ -56,6 +56,14 @@ pipeline {
                         variable: 'DIGITALOCEAN_TOKEN'
                     )]) {
                         sh """
+                          # Some Jenkins setups mount the workspace with `noexec`, which breaks Terraform providers.
+                          # Put Terraform's data dir (including provider binaries) under /tmp where execution is allowed.
+                          export TF_DATA_DIR=\"/tmp/terraform-${JOB_NAME}-${BUILD_NUMBER}\"
+                          mkdir -p \"\$TF_DATA_DIR\"
+
+                          export TF_PLUGIN_CACHE_DIR=\"/tmp/terraform-plugin-cache\"
+                          mkdir -p \"\$TF_PLUGIN_CACHE_DIR\"
+
                           export TF_VAR_do_token=\"\$DIGITALOCEAN_TOKEN\"
                           terraform init
                           terraform apply -auto-approve

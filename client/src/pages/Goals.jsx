@@ -333,6 +333,7 @@ export default function Goals() {
                 date: new Date().toISOString().slice(0, 10),
                 saving: false,
                 error: '',
+                lastSaved: null,
               }
               return (
                 <div key={g._id} className="border rounded-lg p-4">
@@ -382,6 +383,11 @@ export default function Goals() {
                     </div>
                     <div className="mt-2 text-xs text-gray-500">
                       Progress source: {p?.source || 'activities'}
+                      {checkinState.lastSaved && !p?.source && (
+                        <span className="ml-2 text-amber-700">
+                          (Backend may not be updated yet)
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -429,13 +435,19 @@ export default function Goals() {
                             [g._id]: { ...checkinState, saving: true, error: '' },
                           }))
                           try {
-                            await upsertGoalCheckin(g._id, {
+                            const saved = await upsertGoalCheckin(g._id, {
                               date: checkinState.date,
                               value: Number(checkinState.value),
                             })
                             setCheckinByGoalId((prev) => ({
                               ...prev,
-                              [g._id]: { ...checkinState, value: '', saving: false, error: '' },
+                              [g._id]: {
+                                ...checkinState,
+                                value: '',
+                                saving: false,
+                                error: '',
+                                lastSaved: saved,
+                              },
                             }))
                             await loadProgress()
                             notifyProgressChanged()
@@ -458,6 +470,12 @@ export default function Goals() {
                         {checkinState.saving ? 'Saving…' : 'Save'}
                       </button>
                     </div>
+                    {checkinState.lastSaved && (
+                      <div className="text-xs text-gray-600 mt-2">
+                        Saved {checkinState.lastSaved.value} on{' '}
+                        {new Date(checkinState.lastSaved.date).toLocaleDateString()}
+                      </div>
+                    )}
                     <div className="text-xs text-gray-500 mt-2">
                       Tip: one check-in per goal per day; saving again updates that day.
                     </div>

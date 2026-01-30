@@ -17,8 +17,8 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 sh '''
-                  docker build -t ${DOCKER_USER}/healthtracker-server:latest -f server/Dockerfile server
-                  docker build -t ${DOCKER_USER}/healthtracker-client:latest -f client/Dockerfile client
+                docker build -t $DOCKER_USER/healthtracker-server:latest -f server/Dockerfile server
+                docker build -t $DOCKER_USER/healthtracker-client:latest -f client/Dockerfile client
                 '''
             }
         }
@@ -31,9 +31,9 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
                     sh '''
-                      echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                      docker push ${DOCKER_USER}/healthtracker-server:latest
-                      docker push ${DOCKER_USER}/healthtracker-client:latest
+                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                    docker push $DOCKER_USER/healthtracker-server:latest
+                    docker push $DOCKER_USER/healthtracker-client:latest
                     '''
                 }
             }
@@ -43,9 +43,9 @@ pipeline {
             steps {
                 dir('terraform') {
                     sh '''
-                      rm -rf .terraform
-                      terraform init -input=false
-                      terraform apply -auto-approve -input=false
+                    rm -rf .terraform
+                    terraform init -input=false
+                    terraform apply -auto-approve -input=false
                     '''
                 }
             }
@@ -55,9 +55,9 @@ pipeline {
             steps {
                 dir('terraform') {
                     sh '''
-                      IP=$(terraform output -raw droplet_ip)
-                      echo "[healthtracker]" > ../ansible/inventory.ini
-                      echo "server ansible_host=$IP ansible_user=root" >> ../ansible/inventory.ini
+                    IP=$(terraform output -raw droplet_ip)
+                    echo "[healthtracker]" > ../ansible/inventory.ini
+                    echo "server ansible_host=$IP ansible_user=root" >> ../ansible/inventory.ini
                     '''
                 }
             }
@@ -65,11 +65,12 @@ pipeline {
 
         stage('Ansible Deploy') {
             steps {
-                sshagent(credentials: ['root']) {
+                sshagent(credentials: ['healthtracker-ssh']) {
                     dir('ansible') {
                         sh '''
-                          ANSIBLE_HOST_KEY_CHECKING=False \
-                          ansible-playbook -i inventory.ini playbook.yml
+                        ansible-playbook \
+                          -i inventory.ini playbook.yml \
+                          --ssh-extra-args="-o StrictHostKeyChecking=no"
                         '''
                     }
                 }
@@ -79,7 +80,7 @@ pipeline {
 
     post {
         success {
-            echo "✅ Deployment successful!"
+            echo "✅ Deployment completed successfully"
         }
         failure {
             echo "❌ Pipeline failed"

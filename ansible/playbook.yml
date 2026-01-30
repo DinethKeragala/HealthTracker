@@ -1,13 +1,9 @@
 ---
-- name: Setup & Deploy HealthTracker server
+- name: Setup HealthTracker server
   hosts: healthtracker
   become: true
 
-  vars:
-    app_dir: /opt/healthtracker
-
   tasks:
-    # ---------- Docker setup (already working) ----------
     - name: Remove old Docker repo files (avoid Signed-By conflict)
       file:
         path: "{{ item }}"
@@ -17,9 +13,10 @@
         - /usr/share/keyrings/docker-archive-keyring.gpg
         - /etc/apt/keyrings/docker.gpg
 
-    - name: Update apt cache
+    - name: Update apt cache (clean state)
       apt:
         update_cache: true
+        cache_valid_time: 3600
 
     - name: Install required packages
       apt:
@@ -47,7 +44,8 @@
       apt_repository:
         repo: >
           deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg]
-          https://download.docker.com/linux/ubuntu jammy stable
+          https://download.docker.com/linux/ubuntu
+          jammy stable
         state: present
         filename: docker
 
@@ -71,23 +69,24 @@
         enabled: true
         state: started
 
-    # ---------- Deployment section ----------
-    - name: Create application directory
+    - name: Create app directory
       file:
-        path: "{{ app_dir }}"
+        path: /opt/healthtracker
         state: directory
+        mode: "0755"
 
-    - name: Copy docker-compose.yml to server
+    - name: Copy docker-compose file to server
       copy:
-        src: docker-compose.yml
-        dest: "{{ app_dir }}/docker-compose.yml"
+        src: ../docker-compose.yml
+        dest: /opt/healthtracker/docker-compose.yml
+        mode: "0644"
 
-    - name: Pull latest images
+    - name: Pull latest Docker images
       command: docker compose pull
       args:
-        chdir: "{{ app_dir }}"
+        chdir: /opt/healthtracker
 
-    - name: Start / update containers
+    - name: Start HealthTracker containers
       command: docker compose up -d
       args:
-        chdir: "{{ app_dir }}"
+        chdir: /opt/healthtracker

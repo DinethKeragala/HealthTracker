@@ -4,6 +4,12 @@
   become: true
 
   tasks:
+    - name: Force apt to use IPv4 (prevent hangs)
+      copy:
+        dest: /etc/apt/apt.conf.d/99force-ipv4
+        content: |
+          Acquire::ForceIPv4 "true";
+          
     - name: Remove old Docker repo files (avoid Signed-By conflict)
       file:
         path: "{{ item }}"

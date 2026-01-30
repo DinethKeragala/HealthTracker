@@ -4,10 +4,9 @@
   become: true
 
   tasks:
-    - name: Update apt
+    - name: Update apt cache
       apt:
-        update_cache: yes
-        upgrade: dist
+        update_cache: true
 
     - name: Install required packages
       apt:
@@ -18,6 +17,14 @@
           - lsb-release
         state: present
 
+    - name: Remove old Docker sources (avoid Signed-By conflicts)
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/apt/sources.list.d/docker.list
+        - /usr/share/keyrings/docker-archive-keyring.gpg
+
     - name: Create Docker keyring directory
       file:
         path: /etc/apt/keyrings
@@ -26,8 +33,8 @@
 
     - name: Add Docker GPG key
       shell: |
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
-        gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+        | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
       args:
         creates: /etc/apt/keyrings/docker.gpg
 
@@ -36,12 +43,13 @@
         repo: >
           deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg]
           https://download.docker.com/linux/ubuntu
-          {{ ansible_lsb.codename }} stable
+          jammy stable
         state: present
+        filename: docker
 
     - name: Update apt after adding Docker repo
       apt:
-        update_cache: yes
+        update_cache: true
 
     - name: Install Docker Engine and Compose plugin
       apt:
@@ -53,25 +61,8 @@
           - docker-compose-plugin
         state: present
 
-    - name: Reload systemd
-      command: systemctl daemon-reexec
-
-    - name: Enable containerd
-      systemd:
-        name: containerd
-        enabled: yes
-        state: started
-
-    - name: Enable Docker
+    - name: Enable and start Docker
       systemd:
         name: docker
-        enabled: yes
+        enabled: true
         state: started
-
-    - name: Verify Docker
-      command: docker --version
-      register: docker_version
-
-    - name: Show Docker version
-      debug:
-        msg: "{{ docker_version.stdout }}"

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAppContext } from '../context/AppContext'
 import { getGoalsProgress } from '../services/stats.service'
 import { PlusIcon, TrashIcon, PencilIcon, RefreshCcwIcon } from 'lucide-react'
@@ -40,7 +40,7 @@ export default function Goals() {
     [],
   )
 
-  const loadProgress = async () => {
+  const loadProgress = useCallback(async () => {
     setLoadingProgress(true)
     setLocalError('')
     try {
@@ -53,13 +53,18 @@ export default function Goals() {
     } finally {
       setLoadingProgress(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     refreshGoals()
     loadProgress()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+
+    const onActivitiesChanged = () => {
+      loadProgress()
+    }
+    window.addEventListener('healthtracker:activities-changed', onActivitiesChanged)
+    return () => window.removeEventListener('healthtracker:activities-changed', onActivitiesChanged)
+  }, [loadProgress, refreshGoals])
 
   const resetForm = () => {
     setEditingGoal(null)

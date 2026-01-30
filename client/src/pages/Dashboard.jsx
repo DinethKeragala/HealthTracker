@@ -38,9 +38,16 @@ const Dashboard = () => {
         setError(e?.response?.data?.message || e.message || 'Failed to load dashboard')
       }
     }
+
+    const onActivitiesChanged = () => {
+      run()
+    }
+
     run()
+    window.addEventListener('healthtracker:activities-changed', onActivitiesChanged)
     return () => {
       mounted = false
+      window.removeEventListener('healthtracker:activities-changed', onActivitiesChanged)
     }
   }, [])
 

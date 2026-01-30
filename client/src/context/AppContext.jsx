@@ -101,10 +101,16 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const notifyActivitiesChanged = () => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('healthtracker:activities-changed'));
+  };
+
   const addActivity = async (activity) => {
     setError('');
     const created = await activitiesApi.createActivity(mapUiActivityToApi(activity));
     setActivities((prev) => [mapApiActivityToUi(created), ...prev]);
+    notifyActivitiesChanged();
     return created;
   };
 
@@ -113,6 +119,7 @@ export const AppProvider = ({ children }) => {
     const saved = await activitiesApi.updateActivity(updated.id, mapUiActivityToApi(updated));
     const ui = mapApiActivityToUi(saved);
     setActivities((prev) => prev.map((a) => (a.id === updated.id ? ui : a)));
+    notifyActivitiesChanged();
     return saved;
   };
 
@@ -120,6 +127,7 @@ export const AppProvider = ({ children }) => {
     setError('');
     await activitiesApi.deleteActivity(id);
     setActivities((prev) => prev.filter((a) => a.id !== id));
+    notifyActivitiesChanged();
   };
 
   const addGoal = async (goal) => {

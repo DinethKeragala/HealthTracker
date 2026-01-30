@@ -6,6 +6,7 @@ pipeline {
   }
 
   stages {
+
     stage('Build Images') {
       steps {
         sh '''
@@ -33,17 +34,11 @@ pipeline {
 
     stage('Terraform Apply') {
       steps {
-        withCredentials([string(credentialsId: 'do-token', variable: 'TF_VAR_do_token')]) {
+        withCredentials([
+          string(credentialsId: 'do-token', variable: 'TF_VAR_do_token')
+        ]) {
           dir('terraform') {
             sh '''
-            set -eu
-
-            # Work around Jenkins workspaces mounted with "noexec" (Terraform providers are native binaries).
-            # By moving Terraform's data dir to /tmp, provider binaries become executable.
-            export TF_DATA_DIR="$(mktemp -d)"
-            export TF_PLUGIN_CACHE_DIR="${HOME}/.terraform.d/plugin-cache"
-            mkdir -p "$TF_PLUGIN_CACHE_DIR"
-
             terraform init -input=false
             terraform apply -auto-approve -input=false
             '''
@@ -56,7 +51,7 @@ pipeline {
       steps {
         sshagent(credentials: ['deploy-ssh']) {
           sh '''
-          ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
+          ansible-playbook -i inventory.ini playbook.yml
           '''
         }
       }

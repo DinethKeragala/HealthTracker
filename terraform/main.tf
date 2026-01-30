@@ -7,12 +7,13 @@ terraform {
   }
 }
 
-provider "digitalocean" {}
+provider "digitalocean" {
+  token = var.do_token
+}
 
-
-resource "digitalocean_ssh_key" "default" {
-  name       = "healthtracker-key"
-  public_key = file(var.ssh_public_key_path)
+# USE EXISTING SSH KEY IN DIGITALOCEAN (Jenkins-safe)
+data "digitalocean_ssh_key" "default" {
+  name = "healthtracker-key"
 }
 
 resource "digitalocean_droplet" "healthtracker" {
@@ -22,7 +23,7 @@ resource "digitalocean_droplet" "healthtracker" {
   image  = "ubuntu-22-04-x64"
 
   ssh_keys = [
-    digitalocean_ssh_key.default.id
+    data.digitalocean_ssh_key.default.id
   ]
 
   tags = ["healthtracker"]

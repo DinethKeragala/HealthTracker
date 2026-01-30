@@ -25,10 +25,10 @@
 
     - name: Copy docker-compose file
       copy:
-        src: ../docker-compose.yml
+        src: docker-compose.yml
         dest: /root/docker-compose.yml
 
-    - name: Deploy app
+    - name: Deploy application
       command: docker compose up -d
       args:
         chdir: /root

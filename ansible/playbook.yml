@@ -4,7 +4,16 @@
   become: true
 
   tasks:
-    - name: Update apt cache
+    - name: Remove old Docker repo files (avoid Signed-By conflict)
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/apt/sources.list.d/docker.list
+        - /usr/share/keyrings/docker-archive-keyring.gpg
+        - /etc/apt/keyrings/docker.gpg
+
+    - name: Update apt cache (clean state)
       apt:
         update_cache: true
 
@@ -17,21 +26,6 @@
           - lsb-release
         state: present
 
-    # ---- CLEAN OLD DOCKER SETUP (IMPORTANT) ----
-    - name: Remove old Docker repository
-      file:
-        path: /etc/apt/sources.list.d/docker.list
-        state: absent
-
-    - name: Remove old Docker keyrings
-      file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - /usr/share/keyrings/docker-archive-keyring.gpg
-        - /etc/apt/keyrings/docker.gpg
-
-    # ---- ADD DOCKER CLEANLY ----
     - name: Create Docker keyring directory
       file:
         path: /etc/apt/keyrings
@@ -54,7 +48,7 @@
         state: present
         filename: docker
 
-    - name: Update apt cache after Docker repo
+    - name: Update apt cache after adding Docker repo
       apt:
         update_cache: true
 

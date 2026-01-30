@@ -7,6 +7,12 @@ pipeline {
 
   stages {
 
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
     stage('Build Images') {
       steps {
         sh '''
@@ -39,10 +45,27 @@ pipeline {
         ]) {
           dir('terraform') {
             sh '''
+            # Fix provider permission issues in Jenkins
+            rm -rf .terraform
+            rm -rf ~/.terraform.d/plugin-cache
+
             terraform init -input=false
             terraform apply -auto-approve -input=false
             '''
           }
+        }
+      }
+    }
+
+    stage('Generate Ansible Inventory') {
+      steps {
+        dir('terraform') {
+          sh '''
+          IP=$(terraform output -raw droplet_ip)
+
+          echo "[healthtracker]" > ../inventory.ini
+          echo "server ansible_host=$IP ansible_user=root" >> ../inventory.ini
+          '''
         }
       }
     }
@@ -55,6 +78,15 @@ pipeline {
           '''
         }
       }
+    }
+  }
+
+  post {
+    failure {
+      echo "❌ Pipeline failed"
+    }
+    success {
+      echo "✅ HealthTracker deployed successfully"
     }
   }
 }

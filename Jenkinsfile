@@ -18,10 +18,10 @@ pipeline {
 
         stage('Build Docker Images') {
             steps {
-                script {
-                    docker.build("${DOCKERHUB_USER}/${BACKEND_IMAGE}:latest", "backend")
-                    docker.build("${DOCKERHUB_USER}/${FRONTEND_IMAGE}:latest", "frontend")
-                }
+                sh """
+                  docker build -t ${DOCKERHUB_USER}/${BACKEND_IMAGE}:latest backend
+                  docker build -t ${DOCKERHUB_USER}/${FRONTEND_IMAGE}:latest frontend
+                """
             }
         }
 
@@ -33,9 +33,9 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
                     sh """
-                        echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
-                        docker push ${DOCKERHUB_USER}/${BACKEND_IMAGE}:latest
-                        docker push ${DOCKERHUB_USER}/${FRONTEND_IMAGE}:latest
+                      echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
+                      docker push ${DOCKERHUB_USER}/${BACKEND_IMAGE}:latest
+                      docker push ${DOCKERHUB_USER}/${FRONTEND_IMAGE}:latest
                     """
                 }
             }
@@ -49,8 +49,8 @@ pipeline {
                         variable: 'DIGITALOCEAN_TOKEN'
                     )]) {
                         sh """
-                            terraform init
-                            terraform apply -auto-approve
+                          terraform init
+                          terraform apply -auto-approve
                         """
                     }
                 }
@@ -59,17 +59,27 @@ pipeline {
 
         stage('Ansible Deploy') {
             steps {
-                withCredentials([sshUserPrivateKey(
+                withCredentials([usernamePassword(
                     credentialsId: 'droplet-ssh',
-                    keyFileVariable: 'SSH_KEY'
+                    usernameVariable: 'SSH_USER',
+                    passwordVariable: 'SSH_PASS'
                 )]) {
                     sh """
-                        export ANSIBLE_HOST_KEY_CHECKING=False
-                        ansible-playbook -i ansible/inventory.ini ansible/playbook.yml \
-                          --private-key \$SSH_KEY
+                      export ANSIBLE_HOST_KEY_CHECKING=False
+                      ansible-playbook -i ansible/inventory.ini ansible/playbook.yml \
+                        -u \$SSH_USER --extra-vars "ansible_ssh_pass=\$SSH_PASS"
                     """
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Pipeline completed successfully. Application deployed."
+        }
+        failure {
+            echo "❌ Pipeline failed. Check logs above."
         }
     }
 }

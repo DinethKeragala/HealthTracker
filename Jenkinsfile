@@ -14,7 +14,7 @@ pipeline {
             }
         }
 
-        stage('Build Images') {
+        stage('Build Docker Images') {
             steps {
                 sh '''
                   docker build -t $DOCKER_USER/healthtracker-server:latest -f server/Dockerfile server
@@ -23,15 +23,13 @@ pipeline {
             }
         }
 
-        stage('Push Images') {
+        stage('Push Docker Images') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub-creds',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                    )
-                ]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
                     sh '''
                       echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                       docker push $DOCKER_USER/healthtracker-server:latest
@@ -58,8 +56,8 @@ pipeline {
                 dir('terraform') {
                     sh '''
                       IP=$(terraform output -raw droplet_ip)
-                      echo "[healthtracker]" > inventory.ini
-                      echo "server ansible_host=$IP ansible_user=root" >> inventory.ini
+                      echo "[healthtracker]" > ../ansible/inventory.ini
+                      echo "server ansible_host=$IP ansible_user=root" >> ../ansible/inventory.ini
                     '''
                 }
             }
@@ -67,12 +65,10 @@ pipeline {
 
         stage('Ansible Deploy') {
             steps {
-                sshagent(credentials: ['root']) {
-                    dir('terraform') {
-                        sh '''
-                          ansible-playbook -i inventory.ini playbook.yml
-                        '''
-                    }
+                sshagent(['healthtracker-ssh']) {
+                    sh '''
+                      ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
+                    '''
                 }
             }
         }

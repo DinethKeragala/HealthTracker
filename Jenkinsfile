@@ -1,6 +1,12 @@
 pipeline {
     agent any
 
+    options {
+        // Declarative pipelines do an implicit checkout by default.
+        // We do an explicit checkout in the first stage, so skip the default.
+        skipDefaultCheckout(true)
+    }
+
     environment {
         DOCKERHUB_USER = "dinethkeragala"
         BACKEND_IMAGE  = "healthtracker-server"
@@ -19,8 +25,9 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 sh """
-                  docker build -t ${DOCKERHUB_USER}/${BACKEND_IMAGE}:latest backend
-                  docker build -t ${DOCKERHUB_USER}/${FRONTEND_IMAGE}:latest frontend
+                                    docker build -t ${DOCKERHUB_USER}/${BACKEND_IMAGE}:latest -f server/Dockerfile server
+                                    docker build -t ${DOCKERHUB_USER}/${FRONTEND_IMAGE}:latest -f client/Dockerfile client \
+                                        --build-arg VITE_API_URL=/api
                 """
             }
         }
@@ -49,6 +56,7 @@ pipeline {
                         variable: 'DIGITALOCEAN_TOKEN'
                     )]) {
                         sh """
+                          export TF_VAR_do_token=\"\$DIGITALOCEAN_TOKEN\"
                           terraform init
                           terraform apply -auto-approve
                         """

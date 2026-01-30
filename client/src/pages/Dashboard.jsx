@@ -14,7 +14,6 @@ import { getSummary, getGoalsProgress } from '../services/stats.service'
 import { listActivities } from '../services/activities.service'
 
 const Dashboard = () => {
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [summary, setSummary] = useState(null)
   const [goalsProgress, setGoalsProgress] = useState([])
@@ -23,7 +22,6 @@ const Dashboard = () => {
   useEffect(() => {
     let mounted = true
     const run = async () => {
-      setLoading(true)
       setError('')
       try {
         const [s, gp, a] = await Promise.all([
@@ -38,8 +36,6 @@ const Dashboard = () => {
       } catch (e) {
         if (!mounted) return
         setError(e?.response?.data?.message || e.message || 'Failed to load dashboard')
-      } finally {
-        if (mounted) setLoading(false)
       }
     }
     run()

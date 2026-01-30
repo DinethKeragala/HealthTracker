@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAppContext } from '../context/AppContext'
 import { getGoalsProgress } from '../services/stats.service'
-import { PlusIcon, TrashIcon } from 'lucide-react'
+import { PlusIcon, TrashIcon, PencilIcon, RefreshCcwIcon } from 'lucide-react'
 
 export default function Goals() {
   const {
@@ -9,6 +9,7 @@ export default function Goals() {
     loadingGoals,
     refreshGoals,
     addGoal,
+    updateGoal,
     deleteGoal,
     error,
   } = useAppContext()
@@ -17,6 +18,7 @@ export default function Goals() {
   const [loadingProgress, setLoadingProgress] = useState(false)
   const [localError, setLocalError] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [editingGoal, setEditingGoal] = useState(null)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -59,6 +61,18 @@ export default function Goals() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const resetForm = () => {
+    setEditingGoal(null)
+    setFormData({
+      title: '',
+      goalType: 'steps',
+      targetValue: 10000,
+      unit: 'steps',
+      period: 'daily',
+      isActive: true,
+    })
+  }
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
     if (name === 'goalType') {
@@ -82,15 +96,42 @@ export default function Goals() {
     e.preventDefault()
     setLocalError('')
     try {
-      await addGoal({
+      const payload = {
         ...formData,
         targetValue: Number(formData.targetValue),
-      })
+      }
+
+      if (editingGoal?._id) {
+        await updateGoal(editingGoal._id, payload)
+      } else {
+        await addGoal(payload)
+      }
+
       setShowForm(false)
+      setEditingGoal(null)
+      await refreshGoals()
       await loadProgress()
     } catch (e2) {
-      setLocalError(e2?.response?.data?.message || e2.message || 'Failed to create goal')
+      setLocalError(
+        e2?.response?.data?.message ||
+          e2.message ||
+          (editingGoal ? 'Failed to update goal' : 'Failed to create goal'),
+      )
     }
+  }
+
+  const beginEdit = (goal) => {
+    setLocalError('')
+    setEditingGoal(goal)
+    setFormData({
+      title: goal?.title || '',
+      goalType: goal?.goalType || 'steps',
+      targetValue: goal?.targetValue ?? 0,
+      unit: goal?.unit || '',
+      period: goal?.period || 'daily',
+      isActive: goal?.isActive ?? true,
+    })
+    setShowForm(true)
   }
 
   const progressByGoalId = useMemo(() => {
@@ -105,13 +146,31 @@ export default function Goals() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">Goals</h1>
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg flex items-center space-x-1"
-        >
-          <PlusIcon size={16} />
-          <span>New Goal</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={loadProgress}
+            className="bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 py-2 px-3 rounded-lg flex items-center space-x-1"
+            title="Refresh progress"
+          >
+            <RefreshCcwIcon size={16} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+          <button
+            onClick={() => {
+              if (showForm) {
+                setShowForm(false)
+                resetForm()
+              } else {
+                resetForm()
+                setShowForm(true)
+              }
+            }}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg flex items-center space-x-1"
+          >
+            <PlusIcon size={16} />
+            <span>New Goal</span>
+          </button>
+        </div>
       </div>
 
       {(error || localError) && (
@@ -122,7 +181,9 @@ export default function Goals() {
 
       {showForm && (
         <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">Create Goal</h2>
+          <h2 className="text-lg font-semibold mb-4">
+            {editingGoal ? 'Edit Goal' : 'Create Goal'}
+          </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -220,11 +281,14 @@ export default function Goals() {
                 type="submit"
                 className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg"
               >
-                Create
+                {editingGoal ? 'Update' : 'Create'}
               </button>
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  setShowForm(false)
+                  resetForm()
+                }}
                 className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg"
               >
                 Cancel
@@ -260,18 +324,28 @@ export default function Goals() {
                       </div>
                       <div className="text-sm text-gray-500 capitalize">
                         {g.period} • target {g.targetValue} {g.unit}
+                        {!g.isActive && <span className="ml-2 text-xs">(inactive)</span>}
                       </div>
                     </div>
-                    <button
-                      onClick={async () => {
-                        await deleteGoal(g._id)
-                        await loadProgress()
-                      }}
-                      className="p-1 text-gray-500 hover:text-red-600"
-                      title="Delete"
-                    >
-                      <TrashIcon size={18} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => beginEdit(g)}
+                        className="p-1 text-gray-500 hover:text-indigo-600"
+                        title="Edit"
+                      >
+                        <PencilIcon size={18} />
+                      </button>
+                      <button
+                        onClick={async () => {
+                          await deleteGoal(g._id)
+                          await loadProgress()
+                        }}
+                        className="p-1 text-gray-500 hover:text-red-600"
+                        title="Delete"
+                      >
+                        <TrashIcon size={18} />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="mt-3">

@@ -31,7 +31,7 @@ export default function Register() {
     }
 
     try {
-      const { confirmPassword, ...userData } = formData;
+      const { confirmPassword: _confirmPassword, ...userData } = formData;
       await register(userData);
       navigate('/dashboard');
     } catch (err) {

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 import * as activitiesApi from '../services/activities.service';
 import * as goalsApi from '../services/goals.service';
@@ -149,26 +149,23 @@ export const AppProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, user?._id, user]);
 
-  const value = useMemo(
-    () => ({
-      activities,
-      setActivities,
-      loadingActivities,
-      refreshActivities,
-      addActivity,
-      updateActivity,
-      deleteActivity,
-      goals,
-      setGoals,
-      loadingGoals,
-      refreshGoals,
-      addGoal,
-      updateGoal,
-      deleteGoal,
-      error,
-    }),
-    [activities, goals, loadingActivities, loadingGoals, error]
-  );
+  const value = {
+    activities,
+    setActivities,
+    loadingActivities,
+    refreshActivities,
+    addActivity,
+    updateActivity,
+    deleteActivity,
+    goals,
+    setGoals,
+    loadingGoals,
+    refreshGoals,
+    addGoal,
+    updateGoal,
+    deleteGoal,
+    error,
+  };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

@@ -81,6 +81,14 @@
         dest: /opt/healthtracker/docker-compose.yml
         mode: "0644"
 
+    - name: Create .env file for HealthTracker
+      copy:
+        dest: /opt/healthtracker/.env
+        content: |
+          MONGO_URI=mongodb://mongo:27017/healthtracker
+          PORT=5000
+          NODE_ENV=production
+
     - name: Pull latest Docker images
       command: docker compose pull
       args:

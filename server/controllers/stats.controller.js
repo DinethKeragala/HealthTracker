@@ -1,5 +1,6 @@
 import Activity from '../models/activity.model.js';
 import Goal from '../models/goal.model.js';
+import GoalCheckin from '../models/goalCheckin.model.js';
 
 const parseDate = (value) => {
   if (!value) return undefined;
@@ -106,37 +107,61 @@ export const getGoalsProgress = async (req, res) => {
     const progress = await Promise.all(
       goals.map(async (goal) => {
         const { from, to } = computeRangeForPeriod(goal.period);
-        const match = { userId: req.userId };
-        if (from && to) match.startedAt = { $gte: from, $lte: to };
+        const checkinMatch = { userId: req.userId, goalId: goal._id };
+        if (from && to) checkinMatch.date = { $gte: from, $lte: to };
 
-        const [totals] = await Activity.aggregate([
-          { $match: match },
+        const [checkinTotals] = await GoalCheckin.aggregate([
+          { $match: checkinMatch },
           {
             $group: {
               _id: null,
-              steps: { $sum: { $ifNull: ['$steps', 0] } },
-              caloriesBurned: { $sum: { $ifNull: ['$caloriesBurned', 0] } },
-              distanceKm: { $sum: { $ifNull: ['$distanceKm', 0] } },
-              durationMinutes: { $sum: { $ifNull: ['$durationMinutes', 0] } },
-              workouts: { $sum: 1 }
+              total: { $sum: '$value' },
+              count: { $sum: 1 }
             }
           }
         ]);
 
-        const t = totals || {
-          steps: 0,
-          caloriesBurned: 0,
-          distanceKm: 0,
-          durationMinutes: 0,
-          workouts: 0
-        };
+        const manualTotal = checkinTotals?.total || 0;
+        const manualCount = checkinTotals?.count || 0;
 
         let currentValue = 0;
-        if (goal.goalType === 'steps') currentValue = t.steps;
-        if (goal.goalType === 'calories') currentValue = t.caloriesBurned;
-        if (goal.goalType === 'distance') currentValue = t.distanceKm;
-        if (goal.goalType === 'duration') currentValue = t.durationMinutes;
-        if (goal.goalType === 'workouts') currentValue = t.workouts;
+        let source = 'activities';
+
+        if (manualCount > 0) {
+          currentValue = manualTotal;
+          source = 'manual';
+        } else {
+          const match = { userId: req.userId };
+          if (from && to) match.startedAt = { $gte: from, $lte: to };
+
+          const [totals] = await Activity.aggregate([
+            { $match: match },
+            {
+              $group: {
+                _id: null,
+                steps: { $sum: { $ifNull: ['$steps', 0] } },
+                caloriesBurned: { $sum: { $ifNull: ['$caloriesBurned', 0] } },
+                distanceKm: { $sum: { $ifNull: ['$distanceKm', 0] } },
+                durationMinutes: { $sum: { $ifNull: ['$durationMinutes', 0] } },
+                workouts: { $sum: 1 }
+              }
+            }
+          ]);
+
+          const t = totals || {
+            steps: 0,
+            caloriesBurned: 0,
+            distanceKm: 0,
+            durationMinutes: 0,
+            workouts: 0
+          };
+
+          if (goal.goalType === 'steps') currentValue = t.steps;
+          if (goal.goalType === 'calories') currentValue = t.caloriesBurned;
+          if (goal.goalType === 'distance') currentValue = t.distanceKm;
+          if (goal.goalType === 'duration') currentValue = t.durationMinutes;
+          if (goal.goalType === 'workouts') currentValue = t.workouts;
+        }
 
         const percent = goal.targetValue > 0 ? Math.min(100, (currentValue / goal.targetValue) * 100) : 0;
 
@@ -144,7 +169,8 @@ export const getGoalsProgress = async (req, res) => {
           goal,
           periodRange: { from, to },
           currentValue,
-          percent
+          percent,
+          source
         };
       })
     );

@@ -43,11 +43,17 @@ const Dashboard = () => {
       run()
     }
 
+    const onProgressChanged = () => {
+      run()
+    }
+
     run()
     window.addEventListener('healthtracker:activities-changed', onActivitiesChanged)
+    window.addEventListener('healthtracker:progress-changed', onProgressChanged)
     return () => {
       mounted = false
       window.removeEventListener('healthtracker:activities-changed', onActivitiesChanged)
+      window.removeEventListener('healthtracker:progress-changed', onProgressChanged)
     }
   }, [])
 

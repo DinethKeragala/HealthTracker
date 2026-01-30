@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAppContext } from '../context/AppContext'
 import { getGoalsProgress } from '../services/stats.service'
+import { upsertGoalCheckin } from '../services/goalCheckins.service'
 import { PlusIcon, TrashIcon, PencilIcon, RefreshCcwIcon } from 'lucide-react'
 
 export default function Goals() {
@@ -19,6 +20,8 @@ export default function Goals() {
   const [localError, setLocalError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingGoal, setEditingGoal] = useState(null)
+
+  const [checkinByGoalId, setCheckinByGoalId] = useState({})
 
   const [formData, setFormData] = useState({
     title: '',
@@ -146,6 +149,11 @@ export default function Goals() {
     }
     return map
   }, [progress])
+
+  const notifyProgressChanged = () => {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(new CustomEvent('healthtracker:progress-changed'))
+  }
 
   return (
     <div className="space-y-6">
@@ -320,6 +328,12 @@ export default function Goals() {
             {goals.map((g) => {
               const p = progressByGoalId.get(g._id)
               const percent = Math.min(100, Math.round(p?.percent || 0))
+              const checkinState = checkinByGoalId[g._id] || {
+                value: '',
+                date: new Date().toISOString().slice(0, 10),
+                saving: false,
+                error: '',
+              }
               return (
                 <div key={g._id} className="border rounded-lg p-4">
                   <div className="flex justify-between items-start">
@@ -365,6 +379,87 @@ export default function Goals() {
                         className="bg-indigo-600 h-2 rounded-full"
                         style={{ width: `${percent}%` }}
                       />
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500">
+                      Progress source: {p?.source || 'activities'}
+                    </div>
+                  </div>
+
+                  {/* Manual progress check-in */}
+                  <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <div className="text-sm font-medium text-gray-700 mb-2">
+                      Add progress (check-in)
+                    </div>
+                    {checkinState.error && (
+                      <div className="text-sm text-red-700 mb-2">
+                        {checkinState.error}
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <input
+                        type="date"
+                        value={checkinState.date}
+                        onChange={(e) =>
+                          setCheckinByGoalId((prev) => ({
+                            ...prev,
+                            [g._id]: { ...checkinState, date: e.target.value, error: '' },
+                          }))
+                        }
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder={`Value (${g.unit || 'units'})`}
+                        value={checkinState.value}
+                        onChange={(e) =>
+                          setCheckinByGoalId((prev) => ({
+                            ...prev,
+                            [g._id]: { ...checkinState, value: e.target.value, error: '' },
+                          }))
+                        }
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <button
+                        type="button"
+                        disabled={checkinState.saving}
+                        onClick={async () => {
+                          setCheckinByGoalId((prev) => ({
+                            ...prev,
+                            [g._id]: { ...checkinState, saving: true, error: '' },
+                          }))
+                          try {
+                            await upsertGoalCheckin(g._id, {
+                              date: checkinState.date,
+                              value: Number(checkinState.value),
+                            })
+                            setCheckinByGoalId((prev) => ({
+                              ...prev,
+                              [g._id]: { ...checkinState, value: '', saving: false, error: '' },
+                            }))
+                            await loadProgress()
+                            notifyProgressChanged()
+                          } catch (e) {
+                            setCheckinByGoalId((prev) => ({
+                              ...prev,
+                              [g._id]: {
+                                ...checkinState,
+                                saving: false,
+                                error:
+                                  e?.response?.data?.message ||
+                                  e.message ||
+                                  'Failed to save check-in',
+                              },
+                            }))
+                          }
+                        }}
+                        className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white py-2 px-4 rounded-lg"
+                      >
+                        {checkinState.saving ? 'Saving…' : 'Save'}
+                      </button>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-2">
+                      Tip: one check-in per goal per day; saving again updates that day.
                     </div>
                   </div>
                 </div>

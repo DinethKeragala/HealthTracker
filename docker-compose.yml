@@ -1,34 +1,32 @@
+version: "3.8"
 
 services:
   mongo:
-    image: mongo:6.0
+    image: mongo:6
     container_name: mongo
-    ports:
-      - "27019:27017"
+    restart: always
     volumes:
-      - mongo_data:/data/db
+      - mongo-data:/data/db
 
   backend:
-    build: ./server
+    image: dinethkeragala/healthtracker-server:latest
     container_name: backend
-    ports:
-      - "5002:5000"
+    restart: always
     env_file:
-      - ./server/.env
+      - .env
+    ports:
+      - "5000:5000"
     depends_on:
       - mongo
 
   frontend:
-    build:
-      context: ./client
-      args:
-        # Use same-origin relative URL; nginx.conf proxies /api -> backend
-        VITE_API_URL: /api
+    image: dinethkeragala/healthtracker-client:latest
     container_name: frontend
+    restart: always
     ports:
-      - "3002:80"
+      - "80:80"
     depends_on:
       - backend
 
 volumes:
-  mongo_data:
+  mongo-data:

@@ -2,8 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_USER = "dinethkeragala"
-        TF_IN_AUTOMATION = "true"
+        DOCKERHUB_USER = 'dinethkeragala'
     }
 
     stages {
@@ -17,19 +16,25 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 sh '''
-                docker build -t ${DOCKER_USER}/healthtracker-server:latest -f server/Dockerfile server
-                docker build -t ${DOCKER_USER}/healthtracker-client:latest -f client/Dockerfile client
+                  docker build -t dinethkeragala/healthtracker-server:latest -f server/Dockerfile server
+                  docker build -t dinethkeragala/healthtracker-client:latest -f client/Dockerfile client
                 '''
             }
         }
 
         stage('Push Docker Images') {
             steps {
-                withCredentials([string(credentialsId: 'dockerhub-creds', variable: 'DOCKER_PASS')]) {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-creds',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
                     sh '''
-                    echo "$DOCKER_PASS" | docker login -u ${DOCKER_USER} --password-stdin
-                    docker push ${DOCKER_USER}/healthtracker-server:latest
-                    docker push ${DOCKER_USER}/healthtracker-client:latest
+                      echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                      docker push dinethkeragala/healthtracker-server:latest
+                      docker push dinethkeragala/healthtracker-client:latest
                     '''
                 }
             }
@@ -37,12 +42,14 @@ pipeline {
 
         stage('Terraform Apply') {
             steps {
-                withCredentials([string(credentialsId: 'do-token', variable: 'TF_VAR_do_token')]) {
+                withCredentials([
+                    string(credentialsId: 'do-token', variable: 'TF_VAR_do_token')
+                ]) {
                     dir('terraform') {
                         sh '''
-                        rm -rf .terraform
-                        terraform init -input=false
-                        terraform apply -auto-approve -input=false
+                          rm -rf .terraform
+                          terraform init -input=false
+                          terraform apply -auto-approve -input=false
                         '''
                     }
                 }
@@ -53,9 +60,9 @@ pipeline {
             steps {
                 dir('terraform') {
                     sh '''
-                    IP=$(terraform output -raw droplet_ip)
-                    echo "[healthtracker]" > ../ansible/inventory.ini
-                    echo "server ansible_host=$IP ansible_user=root" >> ../ansible/inventory.ini
+                      IP=$(terraform output -raw droplet_ip)
+                      echo "[healthtracker]" > ../ansible/inventory.ini
+                      echo "server ansible_host=$IP ansible_user=root" >> ../ansible/inventory.ini
                     '''
                 }
             }
@@ -64,20 +71,22 @@ pipeline {
         stage('Ansible Deploy') {
             steps {
                 sshagent(credentials: ['healthtracker-ssh']) {
-                    sh '''
-                    ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
-                    '''
+                    dir('ansible') {
+                        sh '''
+                          ansible-playbook -i inventory.ini playbook.yml
+                        '''
+                    }
                 }
             }
         }
     }
 
     post {
+        success {
+            echo "✅ Pipeline completed successfully!"
+        }
         failure {
             echo "❌ Pipeline failed"
-        }
-        success {
-            echo "✅ Deployment completed successfully"
         }
     }
 }

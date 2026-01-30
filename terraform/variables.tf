@@ -9,8 +9,9 @@ variable "region" {
 }
 
 variable "droplet_size" {
-  default = "s-1vcpu-512mb-10gb"
+  default = "s-1vcpu-1gb"
 }
+
 
 variable "droplet_name" {
   default = "healthtracker-server"

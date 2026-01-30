@@ -82,6 +82,19 @@ pipeline {
                 )]) {
                     sh """
                       export ANSIBLE_HOST_KEY_CHECKING=False
+
+                                            # Password-based SSH with Ansible requires sshpass on the controller (this Jenkins agent).
+                                            if ! command -v sshpass >/dev/null 2>&1; then
+                                                echo "sshpass not found; installing..."
+                                                if command -v sudo >/dev/null 2>&1; then
+                                                    sudo apt-get update -y
+                                                    sudo apt-get install -y sshpass
+                                                else
+                                                    apt-get update -y
+                                                    apt-get install -y sshpass
+                                                fi
+                                            fi
+
                       ansible-playbook -i ansible/inventory.ini ansible/playbook.yml \
                         -u \$SSH_USER --extra-vars "ansible_ssh_pass=\$SSH_PASS"
                     """

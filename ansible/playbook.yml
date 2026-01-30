@@ -17,19 +17,26 @@
           - lsb-release
         state: present
 
-    - name: Remove old Docker sources (avoid Signed-By conflicts)
+    # ---- CLEAN OLD DOCKER SETUP (IMPORTANT) ----
+    - name: Remove old Docker repository
+      file:
+        path: /etc/apt/sources.list.d/docker.list
+        state: absent
+
+    - name: Remove old Docker keyrings
       file:
         path: "{{ item }}"
         state: absent
       loop:
-        - /etc/apt/sources.list.d/docker.list
         - /usr/share/keyrings/docker-archive-keyring.gpg
+        - /etc/apt/keyrings/docker.gpg
 
+    # ---- ADD DOCKER CLEANLY ----
     - name: Create Docker keyring directory
       file:
         path: /etc/apt/keyrings
         state: directory
-        mode: "0755"
+        mode: '0755'
 
     - name: Add Docker GPG key
       shell: |
@@ -47,7 +54,7 @@
         state: present
         filename: docker
 
-    - name: Update apt after adding Docker repo
+    - name: Update apt cache after Docker repo
       apt:
         update_cache: true
 

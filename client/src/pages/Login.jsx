@@ -25,7 +25,7 @@ export default function Login() {
         <div className="auth-card">
           <div>
             <h2 className="text-center text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300">
-              Sign in
+              Sign in please
             </h2>
             <p className="mt-2 text-center text-sm text-gray-400">
               Or{' '}

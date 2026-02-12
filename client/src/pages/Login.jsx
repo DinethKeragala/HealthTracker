@@ -20,18 +20,18 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-indigo-500 to-purple-600 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
         <div className="auth-card">
-          <div>
-            <h2 className="text-center text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300">
-              Sign in 
+          <div className="flex flex-col items-center text-center">
+            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-2xl text-white">
+              💪
+            </div>
+            <h2 className="mt-6 text-4xl font-extrabold tracking-tight text-gray-900">
+              Welcome Back
             </h2>
-            <p className="mt-2 text-center text-sm text-gray-400">
-              Or{' '}
-              <Link to="/register" className="font-medium text-blue-400 hover:text-blue-300">
-                create a new account
-              </Link>
+            <p className="mt-2 text-sm text-gray-500">
+              Log in to continue your fitness journey
             </p>
           </div>
           {error && (
@@ -40,44 +40,68 @@ export default function Login() {
             </div>
           )}
           <form className="space-y-6" onSubmit={handleSubmit}>
-            <div className="rounded-md -space-y-px">
+            <div className="space-y-5">
               <div>
-                <label htmlFor="email-address" className="sr-only">
-                  Email address
+                <label htmlFor="email-address" className="block text-sm font-medium text-gray-700">
+                  Email
                 </label>
-                <input
-                  id="email-address"
-                  name="email"
-                  type="email"
-                  required
-                  className="input-field rounded-t-md bg-transparent"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+                <div className="mt-2">
+                  <input
+                    id="email-address"
+                    name="email"
+                    type="email"
+                    required
+                    className="input-field"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
               </div>
               <div>
-                <label htmlFor="password" className="sr-only">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password
                 </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  className="input-field rounded-b-md bg-transparent"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <div className="mt-2">
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    className="input-field"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
 
+            <div className="flex items-center justify-end">
+              <a
+                href="#"
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+                onClick={(e) => e.preventDefault()}
+              >
+                Forgot password?
+              </a>
+            </div>
+
             <div>
-              <button type="submit" className="btn-primary w-full bg-blue-600 hover:bg-blue-500">
-                Sign in
+              <button
+                type="submit"
+                className="btn-primary w-full py-3 font-semibold bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
+              >
+                Log In
               </button>
             </div>
+
+            <p className="text-center text-sm text-gray-600">
+              Don&apos;t have an account?{' '}
+              <Link to="/register" className="font-semibold text-indigo-600 hover:text-indigo-500">
+                Sign up
+              </Link>
+            </p>
           </form>
         </div>
       </div>

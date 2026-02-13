@@ -28,7 +28,7 @@ export default function Login() {
               💪
             </div>
             <h2 className="mt-6 text-4xl font-extrabold tracking-tight text-gray-900">
-              Welcome Back!
+              Welcome Back
             </h2>
             <p className="mt-2 text-sm text-gray-500">
               Log in to continue your fitness journey
